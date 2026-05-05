@@ -23,7 +23,6 @@ def _extract_space_key(payload: dict) -> str | None:
     return None
 
 def _verify_token(header_val: str) -> bool:
-    """Confluence는 SHA256 HMAC 대신 단순 Bearer 토큰 방식 지원"""
     if not CONFLUENCE_SECRET:
         return True
     return CONFLUENCE_SECRET in (header_val or "")
@@ -38,16 +37,15 @@ async def confluence_webhook(
     x_confluence_event: Optional[str] = Header(None),
     authorization: Optional[str] = Header(None),
 ):
-    # 시크릿 토큰 검증 (설정된 경우)
     if CONFLUENCE_SECRET and not _verify_token(authorization or ""):
         raise HTTPException(status_code=401, detail="Invalid token")
 
     payload = await request.json()
-
-    # 이벤트 타입: 헤더 우선, 없으면 페이로드에서
     event = x_confluence_event or payload.get("event", "unknown")
 
-    # 스페이스 필터링
+    logger.info(f"헤더 x-confluence-event: {x_confluence_event}")
+    logger.info(f"페이로드: {payload}")
+
     if ALLOWED_SPACES:
         space_key = _extract_space_key(payload)
         if space_key and space_key not in ALLOWED_SPACES:
