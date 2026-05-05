@@ -1,8 +1,12 @@
 import os
+import logging
 import httpx
 from fastapi import FastAPI, Request, HTTPException, Header
 from typing import Optional
 from formatters import get_formatter
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("app.main")
 
 app = FastAPI(title="Confluence → Discord Bot")
 
