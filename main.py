@@ -14,6 +14,22 @@ DISCORD_WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 CONFLUENCE_SECRET   = os.environ.get("CONFLUENCE_WEBHOOK_SECRET", "")
 ALLOWED_SPACES      = [s.strip() for s in os.environ.get("ALLOWED_SPACES", "").split(",") if s.strip()]
 
+def _infer_event(payload: dict, header_event: Optional[str]) -> str:
+    if header_event:
+        return header_event
+    if e := payload.get("event"):
+        return e
+    if t := payload.get("updateTrigger"):
+        return t
+    # 페이로드 키로 추론
+    if "comment" in payload:
+        return "comment_created"
+    if "attachment" in payload:
+        return "attachment_created"
+    if "space" in payload and "page" not in payload:
+        return "space_created"
+    return "unknown"
+
 def _extract_space_key(payload: dict) -> str | None:
     for key in ("page", "comment", "attachment", "space"):
         obj = payload.get(key, {})
@@ -41,10 +57,10 @@ async def confluence_webhook(
         raise HTTPException(status_code=401, detail="Invalid token")
 
     payload = await request.json()
-    event = x_confluence_event or payload.get("event") or payload.get("updateTrigger", "unknown")
+    event = _infer_event(payload, x_confluence_event)
 
     if event == "unknown":
-        logger.info(f"unknown 페이로드: {payload}")
+        logger.info(f"unknown 스킵: {list(payload.keys())}")
         return {"status": "skipped", "event": "unknown"}
 
     logger.info(f"Received event: {event}")
