@@ -43,6 +43,10 @@ async def confluence_webhook(
     payload = await request.json()
     event = x_confluence_event or payload.get("event") or payload.get("updateTrigger", "unknown")
 
+    if event == "unknown":
+        logger.info(f"unknown 페이로드: {payload}")
+        return {"status": "skipped", "event": "unknown"}
+
     logger.info(f"Received event: {event}")
 
     if ALLOWED_SPACES:
