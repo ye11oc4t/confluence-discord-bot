@@ -19,7 +19,7 @@ def _extract_space_key(payload: dict) -> str | None:
         obj = payload.get(key, {})
         if obj:
             space = obj.get("space", {})
-            return space.get("key") or None
+            return space.get("key") or obj.get("spaceKey") or None
     return None
 
 def _verify_token(header_val: str) -> bool:
@@ -41,10 +41,9 @@ async def confluence_webhook(
         raise HTTPException(status_code=401, detail="Invalid token")
 
     payload = await request.json()
-    event = x_confluence_event or payload.get("event", "unknown")
+    event = x_confluence_event or payload.get("event") or payload.get("updateTrigger", "unknown")
 
-    logger.info(f"헤더 x-confluence-event: {x_confluence_event}")
-    logger.info(f"페이로드: {payload}")
+    logger.info(f"Received event: {event}")
 
     if ALLOWED_SPACES:
         space_key = _extract_space_key(payload)
