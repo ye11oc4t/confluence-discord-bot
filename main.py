@@ -21,13 +21,14 @@ def _infer_event(payload: dict, header_event: Optional[str]) -> str:
         return e
     if t := payload.get("updateTrigger"):
         return t
-    # 페이로드 키로 추론
     if "comment" in payload:
         return "comment_created"
     if "attachment" in payload:
         return "attachment_created"
     if "space" in payload and "page" not in payload:
         return "space_created"
+    if "page" in payload:
+        return "page_created"
     return "unknown"
 
 def _extract_space_key(payload: dict) -> str | None:
