@@ -75,12 +75,24 @@ def format_page_moved(p, event):
 
 def format_comment_created(p, event):
     comment = p.get("comment", {})
-    page = comment.get("page", p.get("page", {}))
+    page = comment.get("parent", comment.get("page", p.get("page", {})))
     raw = comment.get("body", {})
     text = raw.get("view", {}).get("value") or raw.get("storage", {}).get("value") or ""
-    fields = [{"name": "페이지", "value": page.get("title", "-"), "inline": True}, {"name": "스페이스", "value": _space(page), "inline": True}]
-    if text: fields.append({"name": "내용", "value": _trunc(text, 200), "inline": False})
-    return {"title": "💬 새 댓글", "url": _page_url(page), "color": COLOR["comment_created"], "fields": fields, "author": _user(p), "footer": {"text": f"Comment • {_space(page)}"}}
+    fields = [
+        {"name": "페이지",   "value": page.get("title", "-"),    "inline": True},
+        {"name": "스페이스", "value": page.get("spaceKey", "-"), "inline": True},
+    ]
+    if text:
+        fields.append({"name": "내용", "value": _trunc(text, 200), "inline": False})
+    return {
+        "title":  "💬 새 댓글",
+        "url":    comment.get("self", _page_url(page)),
+        "color":  COLOR["comment_created"],
+        "fields": fields,
+        "author": _user(p),
+        "footer": {"text": f"Comment • {page.get('spaceKey', '-')}"},
+    }
+
 
 def format_comment_updated(p, event):
     comment = p.get("comment", {})
